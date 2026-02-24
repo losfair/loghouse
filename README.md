@@ -156,7 +156,8 @@ Notable counters (under the `loghouse` expvar map):
 
 ## Failure handling
 
-- Transient ClickHouse errors are retried with exponential backoff.
+- Transient ClickHouse errors are retried with exponential backoff, bounded by `max_retries` / `max_retry_duration`.
+- If retries are exhausted and the error is not a per-row issue, the batch is logged and dropped.
 - If an insert fails with a likely per-row/schema/materialization error, the batch is bisected to isolate the offending record.
 - Once isolated to a single record, it is counted as a poison pill and dropped so ingestion can continue.
 

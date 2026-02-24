@@ -73,32 +73,11 @@ func (w *ClickHouseWriter) insertWithPolicy(ctx context.Context, b Batch) {
 			w.bisectAndInsert(ctx, b)
 			return
 		}
-		// Keep retrying on unknown/non-row errors to avoid dropping data.
-		w.retryForever(ctx, b)
-	}
-}
-
-func (w *ClickHouseWriter) retryForever(ctx context.Context, b Batch) {
-	delay := 250 * time.Millisecond
-	for {
-		if err := w.insertOnce(ctx, b); err == nil {
-			w.metrics.InsertSuccessTotal.Add(1)
-			return
-		}
-		w.metrics.InsertErrorsTotal.Add(1)
-		w.metrics.RetryTotal.Add(1)
-		if ctx.Err() != nil {
-			return
-		}
-		j := time.Duration(rand.Int63n(int64(delay / 2)))
-		select {
-		case <-time.After(delay + j):
-		case <-ctx.Done():
-			return
-		}
-		if delay < 5*time.Second {
-			delay *= 2
-		}
+		w.logger.Error("dropping batch after retries exhausted",
+			zap.Int("rows", len(b.Events)),
+			zap.Int("bytes", b.Bytes),
+			zap.Error(err),
+		)
 	}
 }
 

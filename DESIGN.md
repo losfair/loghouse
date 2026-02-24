@@ -144,6 +144,7 @@ The daemon should be explicit about policy.
 
 - Retries on transient errors using exponential backoff with jitter.
 - Retry budget is bounded by `max_retries` and/or `max_retry_duration`.
+- If the retry budget is exhausted and the error is not a per-row issue, the batch is logged and dropped. This avoids blocking the pipeline indefinitely on persistent infrastructure errors.
 
 ### Poison-pill isolation
 
